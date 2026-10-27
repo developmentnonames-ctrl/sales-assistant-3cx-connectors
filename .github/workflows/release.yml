@@ -32,9 +32,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $helper = (Select-String windows-helper/src/version.h 'kVersion\[\] = "([0-9]+\.[0-9]+\.[0-9]+)"').Matches[0].Groups[1].Value
-          $cmake  = (Select-String windows-helper/CMakeLists.txt 'project\(\S+ VERSION ([0-9.]+)').Matches[0].Groups[1].Value
-          $rc     = (Select-String windows-helper/res/helper.rc '"FileVersion", "([0-9.]+)"').Matches[0].Groups[1].Value
+          $helper = (Select-String -Path windows-helper/src/version.h -Pattern 'kVersion\[\] = "([0-9]+\.[0-9]+\.[0-9]+)"').Matches[0].Groups[1].Value
+          $cmake  = (Select-String -Path windows-helper/CMakeLists.txt -Pattern 'project\(\S+ VERSION ([0-9.]+)').Matches[0].Groups[1].Value
+          $rc     = (Select-String -Path windows-helper/res/helper.rc -Pattern '"FileVersion", "([0-9.]+)"').Matches[0].Groups[1].Value
           $ext    = (Get-Content browser-extension/manifest.json -Raw | ConvertFrom-Json).version
           if ($helper -ne $cmake -or $helper -ne $rc) {
             throw "Helper versions differ: version.h=$helper CMakeLists.txt=$cmake helper.rc=$rc"
