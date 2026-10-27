@@ -27,6 +27,19 @@ Both components:
 - [windows-helper/SECURITY.md](windows-helper/SECURITY.md) and
   [browser-extension/SECURITY.md](browser-extension/SECURITY.md): the reviews, findings and fixes.
 
+## Downloads
+
+Ready-made files are on the [Releases](../../releases/latest) page (sign in to GitHub with access to
+this repository):
+- `sales-assistant-3cx-helper.exe`: the Windows helper (release build);
+- `sales-assistant-for-3cx.zip`: the browser extension (allows only the hosted assistant);
+- `SHA256SUMS.txt`: their SHA-256 checksums.
+
+They are built and tested by GitHub Actions ([.github/workflows/release.yml](.github/workflows/release.yml))
+on every push to `main`. A new release is published when a version number changes (the helper's in
+`CMakeLists.txt`, `src/version.h` and `res/helper.rc`; the extension's in `manifest.json`), tagged
+`helper-v<version>-extension-v<version>`.
+
 ## Building
 
 - **Windows helper:** `windows-helper\build.cmd` (CMake + Ninja, MinGW-w64 GCC or MSVC); runs the

@@ -1,0 +1,119 @@
+# Builds the Windows helper and the browser extension on every push to main and publishes them as a
+# GitHub release, so testers can download them without building.
+#
+# A new release is made only when a version changes:
+#   - Windows helper: windows-helper/CMakeLists.txt, src/version.h and res/helper.rc (must match)
+#   - Browser extension: browser-extension/manifest.json
+# Tag: helper-v<helper version>-extension-v<extension version>. A push with no version change still
+# builds and tests, but publishes nothing.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read and check versions
+        id: version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $helper = (Select-String windows-helper/src/version.h 'kVersion\[\] = "([0-9]+\.[0-9]+\.[0-9]+)"').Matches[0].Groups[1].Value
+          $cmake  = (Select-String windows-helper/CMakeLists.txt 'project\(\S+ VERSION ([0-9.]+)').Matches[0].Groups[1].Value
+          $rc     = (Select-String windows-helper/res/helper.rc '"FileVersion", "([0-9.]+)"').Matches[0].Groups[1].Value
+          $ext    = (Get-Content browser-extension/manifest.json -Raw | ConvertFrom-Json).version
+          if ($helper -ne $cmake -or $helper -ne $rc) {
+            throw "Helper versions differ: version.h=$helper CMakeLists.txt=$cmake helper.rc=$rc"
+          }
+          $tag = "helper-v$helper-extension-v$ext"
+          gh release view $tag *> $null
+          $exists = if ($LASTEXITCODE -eq 0) { 'true' } else { 'false' }
+          $global:LASTEXITCODE = 0
+          "helper=$helper" >> $env:GITHUB_OUTPUT
+          "extension=$ext" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "exists=$exists" >> $env:GITHUB_OUTPUT
+          Write-Output "Helper $helper, extension $ext, tag $tag, already released: $exists"
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+
+      - name: Build the Windows helper (release) and run the unit tests
+        shell: msys2 {0}
+        working-directory: windows-helper
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSA3CX_DEV_ORIGINS=OFF
+          cmake --build build
+          ctest --test-dir build --output-on-failure
+
+      - name: Package the browser extension
+        shell: pwsh
+        working-directory: browser-extension
+        run: ./package.ps1
+
+      - name: Collect the release files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory out | Out-Null
+          Copy-Item windows-helper/build/sales-assistant-3cx-helper.exe out/
+          Copy-Item "browser-extension/dist/sales-assistant-for-3cx-${{ steps.version.outputs.extension }}.zip" out/sales-assistant-for-3cx.zip
+          Push-Location out
+          Get-ChildItem -File | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.Name -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content SHA256SUMS.txt -Encoding ascii
+          Get-Content SHA256SUMS.txt
+          Pop-Location
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sales-assistant-3cx-connectors
+          path: out/
+
+      - name: Publish the release
+        if: steps.version.outputs.exists == 'false'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $sums = Get-Content out/SHA256SUMS.txt -Raw
+          $notes = @"
+          **Windows helper (tray app) ${{ steps.version.outputs.helper }}**: for agents who use the 3CX app from the Microsoft Store. Download ``sales-assistant-3cx-helper.exe`` and run it; no installer or administrator rights needed. It is not code-signed yet, so Windows may show "Windows protected your PC": More info, Run anyway.
+
+          **Browser extension ${{ steps.version.outputs.extension }}**: for agents who use the 3CX web client in Chrome, Edge or Brave. Download ``sales-assistant-for-3cx.zip``, unzip it, then ``chrome://extensions``, Developer mode, Load unpacked. Works only with https://aicallagent.chassia.com.
+
+          Built by GitHub Actions from commit $env:GITHUB_SHA. Changes: see CHANGELOG.md.
+
+          SHA-256:
+          ``````
+          $sums
+          ``````
+          "@
+          gh release create "${{ steps.version.outputs.tag }}" out/sales-assistant-3cx-helper.exe out/sales-assistant-for-3cx.zip out/SHA256SUMS.txt `
+            --target $env:GITHUB_SHA `
+            --title "Helper ${{ steps.version.outputs.helper }} · Extension ${{ steps.version.outputs.extension }}" `
+            --notes $notes --latest
+
+      - name: Nothing to publish
+        if: steps.version.outputs.exists == 'true'
+        shell: pwsh
+        run: Write-Output "::notice::Release ${{ steps.version.outputs.tag }} already exists. Raise a version number to publish a new release."

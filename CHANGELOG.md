@@ -2,6 +2,11 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [SemVer](https://semver.org/).
 
+## Releases
+
+- 2026-10-27: GitHub Actions builds, tests and publishes both components to GitHub Releases
+  whenever a version changes (`.github/workflows/release.yml`).
+
 ## Windows helper
 
 ### 2.0.0 — 2026-10-27
