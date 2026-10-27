@@ -1,0 +1,5 @@
+# Google C++ Style (https://google.github.io/styleguide/cppguide.html), 100 columns.
+BasedOnStyle: Google
+ColumnLimit: 100
+IncludeBlocks: Preserve
+SortIncludes: false   # win32.h must come before other Windows headers

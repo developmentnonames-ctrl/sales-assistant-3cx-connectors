@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "Sales Assistant for 3CX",
+  "version": "1.1.0",
+  "description": "Gives the Sales Assistant's Live Call screen the sound of your 3CX web client calls (the customer and you, separately). It never answers, mutes or changes a call.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "tabCapture",
+    "activeTab",
+    "storage"
+  ],
+  "action": {
+    "default_title": "Sales Assistant for 3CX",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.my3cx.sg/*", "https://*.3cx.sg/*", "https://*.my3cx.lk/*", "https://*.3cx.lk/*",
+        "https://*.my3cx.com/*", "https://*.3cx.com/*", "https://*.3cx.cloud/*", "https://*.3cx.net/*",
+        "https://*.my3cx.us/*", "https://*.3cx.us/*", "https://*.my3cx.eu/*", "https://*.3cx.eu/*",
+        "https://*.my3cx.asia/*", "https://*.3cx.asia/*", "https://*.my3cx.in/*", "https://*.3cx.in/*",
+        "https://*.my3cx.co.uk/*", "https://*.3cx.co.uk/*", "https://*.my3cx.com.au/*", "https://*.3cx.com.au/*"
+      ],
+      "js": ["3cx-hook.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://*.my3cx.sg/*", "https://*.3cx.sg/*", "https://*.my3cx.lk/*", "https://*.3cx.lk/*",
+        "https://*.my3cx.com/*", "https://*.3cx.com/*", "https://*.3cx.cloud/*", "https://*.3cx.net/*",
+        "https://*.my3cx.us/*", "https://*.3cx.us/*", "https://*.my3cx.eu/*", "https://*.3cx.eu/*",
+        "https://*.my3cx.asia/*", "https://*.3cx.asia/*", "https://*.my3cx.in/*", "https://*.3cx.in/*",
+        "https://*.my3cx.co.uk/*", "https://*.3cx.co.uk/*", "https://*.my3cx.com.au/*", "https://*.3cx.com.au/*"
+      ],
+      "js": ["3cx-bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3ZxOLwF7MdYfZGTcW7ZdrDMewlpvtGgWqW8D60rS8tuReaS8kRz+jUBJgYfTSL6+ZobisNJ9gP77OVwfodlYIxTMFe6tgY9fYr1iP9c+UHYtWusW+YlbrJ5lh6VEWtoe5aLxdJMS5NPFlyFhOQPUz8ZG6kyuiKHF3MZYUmySIKBXKQbNAbWiuB3CoGsAB8jnjPjZQl7YJVGanTNKQJVhNBcGpX3WIij2dZ7/QrzdHfWCciUKM6u7C68TZ196O82FZQNmYdnbgv88Wh4c/HNKpG6+1UWnz2f5lRxjYx4hum3QrEkbyJfNOESe4Sd8uVsYBpJ5gp91e8wl9JOVXDT7bQIDAQAB",
+  "externally_connectable": {
+    "matches": [
+      "http://localhost:3004/*",
+      "http://127.0.0.1:3004/*",
+      "https://aicallagent.chassia.com/*"
+    ]
+  }
+}
